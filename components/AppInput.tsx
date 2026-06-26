@@ -1,6 +1,6 @@
-import { useState } from "react";
-import { Text, TextInput, View, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useState } from "react";
+import { Pressable, Text, TextInput, View } from "react-native";
 
 interface AppInputProps {
     label: string;
@@ -28,38 +28,38 @@ export default function AppInput({
 
     return (
         <View className="mb-4">
-            <Text className="mb-1.5 font-medium text-foreground">{label}</Text>
+            <Text className="mb-1.5 text-sm font-semibold text-neutral-700">{label}</Text>
             <View
-                className={`flex-row items-center rounded-lg border ${
-                    error ? "border-error" : "border-border"
+                className={`flex-row items-center rounded-full bg-gray-100 px-4 py-3 ${
+                    error ? "border border-error" : "border border-transparent"
                 }`}
             >
                 <TextInput
                     value={value}
                     onChangeText={onChangeText}
                     placeholder={placeholder}
-                    placeholderTextColor="#737373"
+                    placeholderTextColor="#9CA3AF"
                     secureTextEntry={isPasswordField && !isPasswordVisible}
                     keyboardType={keyboardType}
                     autoCapitalize={autoCapitalize}
                     autoComplete={keyboardType === "email-address" ? "email" : undefined}
                     textContentType={keyboardType === "email-address" ? "emailAddress" : undefined}
                     cursorColor="#000000"
-                    selectionColor="rgba(98, 0, 238, 0.35)"
+                    selectionColor="rgba(0,0,0,0.2)"
                     caretHidden={false}
-                    className="flex-1 p-2.5 text-foreground"
+                    className="flex-1 text-foreground"
                     style={{ color: "#000000" }}
                 />
                 {isPasswordField && (
                     <Pressable
                         onPress={() => setIsPasswordVisible((prev) => !prev)}
-                        className="px-2.5"
+                        className="ml-2"
                         hitSlop={8}
                     >
                         <Ionicons
                             name={isPasswordVisible ? "eye-outline" : "eye-off-outline"}
-                            size={18}
-                            color="#000000"
+                            size={20}
+                            color="#6B7280"
                         />
                     </Pressable>
                 )}

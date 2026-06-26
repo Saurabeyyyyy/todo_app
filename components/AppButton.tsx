@@ -10,7 +10,7 @@ interface AppButtonProps {
 export default function AppButton({ title, onPress, disabled, className }: AppButtonProps) {
     return (
         <TouchableOpacity
-            className={`items-center rounded-lg ${className ?? "bg-primary p-4"} ${disabled ? "opacity-50" : ""}`}
+            className={`items-center ${className ?? "bg-primary p-4 rounded-full"} ${disabled ? "opacity-50" : ""}`}
             onPress={onPress}
             disabled={disabled}
         >
