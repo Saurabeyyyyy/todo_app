@@ -1,57 +1,71 @@
-import { Text, TextInput, View, StyleSheet } from "react-native";
-import { colors } from "../constants/colors";
+import { useState } from "react";
+import { Text, TextInput, View, Pressable } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 
 interface AppInputProps {
     label: string;
     value: string;
     onChangeText: (text: string) => void;
+    placeholder?: string;
     secureTextEntry?: boolean;
+    keyboardType?: "default" | "email-address";
+    autoCapitalize?: "none" | "sentences" | "words" | "characters";
     error?: string;
 }
 
-export default function AppInput({ label, value, onChangeText, secureTextEntry, error }: AppInputProps) {
-    return (
-        <View style={styles.container}>
-            {/* Display the Input Label */}
-            <Text style={styles.label}>{label}</Text>
-            
-            {/* The actual TextInput area */}
-            <TextInput
-                style={[
-                    styles.input, 
-                    error ? styles.errorBorder : null // Turns border red if there's an error
-                ]}
-                value={value}
-                onChangeText={onChangeText}
-                secureTextEntry={secureTextEntry}
-            />
+export default function AppInput({
+    label,
+    value,
+    onChangeText,
+    placeholder,
+    secureTextEntry,
+    keyboardType = "default",
+    autoCapitalize = "sentences",
+    error,
+}: AppInputProps) {
+    const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+    const isPasswordField = secureTextEntry === true;
 
-            {/* Conditionally display error message if it exists */}
-            {error ? <Text style={styles.errorText}>{error}</Text> : null}
+    return (
+        <View className="mb-4">
+            <Text className="mb-1.5 font-medium text-foreground">{label}</Text>
+            <View
+                className={`flex-row items-center rounded-lg border ${
+                    error ? "border-error" : "border-border"
+                }`}
+            >
+                <TextInput
+                    value={value}
+                    onChangeText={onChangeText}
+                    placeholder={placeholder}
+                    placeholderTextColor="#737373"
+                    secureTextEntry={isPasswordField && !isPasswordVisible}
+                    keyboardType={keyboardType}
+                    autoCapitalize={autoCapitalize}
+                    autoComplete={keyboardType === "email-address" ? "email" : undefined}
+                    textContentType={keyboardType === "email-address" ? "emailAddress" : undefined}
+                    cursorColor="#000000"
+                    selectionColor="rgba(98, 0, 238, 0.35)"
+                    caretHidden={false}
+                    className="flex-1 p-2.5 text-foreground"
+                    style={{ color: "#000000" }}
+                />
+                {isPasswordField && (
+                    <Pressable
+                        onPress={() => setIsPasswordVisible((prev) => !prev)}
+                        className="px-2.5"
+                        hitSlop={8}
+                    >
+                        <Ionicons
+                            name={isPasswordVisible ? "eye-outline" : "eye-off-outline"}
+                            size={18}
+                            color="#000000"
+                        />
+                    </Pressable>
+                )}
+            </View>
+
+            {error && <Text className="mt-1 text-xs text-error">{error}</Text>}
         </View>
     );
 }
-
-const styles = StyleSheet.create({
-    container: {
-        marginBottom: 16,
-    }, // Fixed: Properly closed container here
-    label: {
-        marginBottom: 6, 
-        fontWeight: "500",
-    },
-    input: {
-        borderWidth: 1,
-        borderColor: colors.border,
-        borderRadius: 8,
-        padding: 10,
-    },
-    errorBorder: { // Tip: camelCase is standard practice in JS/TS (changed from errorborder)
-        borderColor: colors.error,
-    },
-    errorText: {
-        color: colors.error,
-        marginTop: 4,
-        fontSize: 12,
-    },
-});
