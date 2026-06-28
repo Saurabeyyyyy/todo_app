@@ -102,7 +102,7 @@ export default function Register() {
                     label="Full Name"
                     value={name}
                     onChangeText={setName}
-                    placeholder="Ram Bahadur"
+                    placeholder="John Doe"
                     autoCapitalize="words"
                     error={errors.name}
                 />

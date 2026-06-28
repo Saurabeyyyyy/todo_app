@@ -1,75 +1,67 @@
-import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { createContext, useContext, useEffect, useState } from "react";
+import { account } from "../src/appwrite/config";
 
 interface User {
-  email: string;
   fullName: string;
+  email: string;
   memberSince: string;
 }
 
 interface UserContextType {
   user: User | null;
   setUser: (user: User | null) => void;
+  updateUser: (user: Partial<User>) => void;
   logout: () => Promise<void>;
-  updateUser: (updates: Partial<User>) => void; // new
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
-const USER_STORAGE_KEY = '@user';
-
-export const UserProvider = ({ children }: { children: ReactNode }) => {
+export function UserProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
-    const loadUser = async () => {
-      const stored = await AsyncStorage.getItem(USER_STORAGE_KEY);
-      if (stored) {
-        setUser(JSON.parse(stored));
-      } else {
-        if (stored) {
-          setUser(JSON.parse(stored));
-        }
-      }
-    };
     loadUser();
   }, []);
 
-  const updateUser = (newUser: User | null) => {
-    setUser(newUser);
-    if (newUser) {
-      AsyncStorage.setItem(USER_STORAGE_KEY, JSON.stringify(newUser));
-    } else {
-      AsyncStorage.removeItem(USER_STORAGE_KEY);
+  const loadUser = async () => {
+    try {
+      const currentUser = await account.get();
+
+      setUser({
+        fullName: currentUser.name,
+        email: currentUser.email,
+        memberSince: new Date(currentUser.$createdAt).toLocaleDateString(),
+      });
+    } catch {
+      setUser(null);
     }
+  };
+
+  const updateUser = (updatedUser: Partial<User>) => {
+    setUser((prevUser) => (prevUser ? { ...prevUser, ...updatedUser } : prevUser));
   };
 
   const logout = async () => {
-    setUser(null);
-    await AsyncStorage.removeItem(USER_STORAGE_KEY);
-  };
+    try {
+      await account.deleteSession("current");
+    } catch {}
 
-  // Partial update
-  const updateUserInfo = (updates: Partial<User>) => {
-    if (user) {
-      const updated = { ...user, ...updates };
-      updateUser(updated);
-    }
+    setUser(null);
   };
 
   return (
-    <UserContext.Provider
-      value={{ user, setUser: updateUser, logout, updateUser: updateUserInfo }}
-    >
+    <UserContext.Provider value={{ user, setUser, updateUser, logout }}>
       {children}
     </UserContext.Provider>
   );
-};
+}
 
-export const useUser = () => {
+export function useUser() {
   const context = useContext(UserContext);
+
   if (!context) {
-    throw new Error('useUser must be used within a UserProvider');
+    throw new Error("useUser must be used within UserProvider");
   }
+
   return context;
-};
+}

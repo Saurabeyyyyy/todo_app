@@ -93,7 +93,7 @@ export default function ProfileScreen() {
         <View className="w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-sm">
           <View className="flex-row items-center justify-between border-b border-neutral-100 px-6 py-4">
             <Text className="text-xl font-bold text-foreground">Profile</Text>
-            <Pressable onPress={() => router.back()} hitSlop={8}>
+            <Pressable onPress={() => router.replace("/home")} hitSlop={8}>
               <Feather name="x" size={22} color="#9CA3AF" />
             </Pressable>
           </View>

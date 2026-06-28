@@ -1,13 +1,16 @@
 import { Ionicons } from "@expo/vector-icons";
-import { account } from "../../appwrite/config";
 import { Link, useRouter } from "expo-router";
 import { useState } from "react";
-import { Text, View } from "react-native";import AppButton from "../../../components/AppButton";
+import { Text, View } from "react-native";
+import AppButton from "../../../components/AppButton";
 import AppInput from "../../../components/AppInput";
 import AuthScreen from "../../../components/AuthScreen";
+import { useUser } from "../../../components/UserContext";
+import { account } from "../../appwrite/config";
 
 export default function Login() {
     const router = useRouter();
+    const { setUser } = useUser();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
@@ -40,26 +43,35 @@ export default function Login() {
         setLoading(true);
 
         try {
-            // Create a login session
+            // If there's already an active session, remove it before creating a new login session.
+            try {
+                await account.deleteSession("current");
+            } catch (sessionError) {
+                // Ignore if no session exists or if deleteSession is not supported in this context.
+            }
+
             await account.createEmailPasswordSession(
-            email.trim(),
-            password
+                email.trim(),
+                password
             );
 
-    // Get logged in user
-    const user = await account.get();
+            const currentUser = await account.get();
 
-    console.log("Logged in:", user);
+            setUser({
+                fullName: currentUser.name,
+                email: currentUser.email,
+                memberSince: new Date(currentUser.$createdAt).toLocaleDateString(),
+            });
 
-    router.replace("/home");
-  } catch (error: any) {
-    setErrors({
-      email: error.message || "Invalid email or password",
-    });
-  } finally {
-    setLoading(false);
-  }
-};
+            router.replace("/home");
+        } catch (error: any) {
+            setErrors({
+                email: error.message || "Invalid email or password",
+            });
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
         <AuthScreen>
