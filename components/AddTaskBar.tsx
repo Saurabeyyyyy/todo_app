@@ -28,9 +28,14 @@ export default function AddTaskBar({ onAddTask }: Props) {
         style={{ color: "#111827" }}
       />
 
-      <TouchableOpacity onPress={handleAdd} className="rounded-xl bg-black px-4 py-2.5">
-        <Text className="text-sm font-semibold text-white">Add Task</Text>
-      </TouchableOpacity>
+      <TouchableOpacity
+  onPress={handleAdd}
+  className="rounded-full bg-black px-6 py-3"
+>
+  <Text className="text-sm font-semibold text-white">
+    Add Task
+  </Text>
+</TouchableOpacity>
     </View>
   );
 }

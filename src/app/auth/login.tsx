@@ -43,13 +43,6 @@ export default function Login() {
         setLoading(true);
 
         try {
-            // If there's already an active session, remove it before creating a new login session.
-            try {
-                await account.deleteSession("current");
-            } catch (sessionError) {
-                // Ignore if no session exists or if deleteSession is not supported in this context.
-            }
-
             await account.createEmailPasswordSession(
                 email.trim(),
                 password

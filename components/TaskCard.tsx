@@ -1,13 +1,16 @@
 import { Feather } from "@expo/vector-icons";
-import { useState } from "react";
-import { Text, TextInput, TouchableOpacity, View } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import { Alert, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { Item, Task } from "../utils/task";
 
 type TreeProps = {
   item: Item;
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
-  onAddChild: (parentId: string, title: string) => void;
+  onAddChild: (parentId: string, title: string) => Promise<void> | void;
+  onSaveTaskTitle: (id: string, title: string) => Promise<void> | void;
+  onSelectAddInput: (taskId: string | null) => void;
+  activeAddInputTaskId: string | null;
   depth: number;
 };
 
@@ -15,14 +18,12 @@ type FlatProps = {
   task: Task;
   onToggleTask: (taskId: string) => void;
   onDeleteTask: (taskId: string) => void;
-  onAddSubtask: (taskId: string, title: string) => void;
+  onAddSubtask: (taskId: string, title: string) => Promise<void> | void;
   onToggleSubtask?: (taskId: string, subtaskId: string) => void;
   onDeleteSubtask?: (taskId: string, subtaskId: string) => void;
 };
 
 type Props = TreeProps | FlatProps;
-
-const MAX_DEPTH = 6;
 
 function isTreeProps(props: Props): props is TreeProps {
   return "item" in props;
@@ -45,37 +46,136 @@ function Checkbox({ completed, onPress }: { completed: boolean; onPress: () => v
 export default function TaskCard(props: Props) {
   const [newChildTitle, setNewChildTitle] = useState("");
   const [expanded, setExpanded] = useState(true);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedTitle, setEditedTitle] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+  const addInputRef = useRef<TextInput | null>(null);
 
   const task = isTreeProps(props) ? props.item : props.task;
   const depth = isTreeProps(props) ? props.depth : 0;
   const onToggle = isTreeProps(props) ? props.onToggle : props.onToggleTask;
   const onDelete = isTreeProps(props) ? props.onDelete : props.onDeleteTask;
   const onAddChild = isTreeProps(props) ? props.onAddChild : props.onAddSubtask;
+  const onSaveTaskTitle = isTreeProps(props) ? props.onSaveTaskTitle : undefined;
+  const onSelectAddInput = isTreeProps(props) ? props.onSelectAddInput : undefined;
+  const isActiveAddInput = isTreeProps(props) && props.activeAddInputTaskId === task.id;
+
+  useEffect(() => {
+    if (isActiveAddInput) {
+      addInputRef.current?.focus();
+    }
+  }, [isActiveAddInput]);
+
+  useEffect(() => {
+    if (isEditing) {
+      onSelectAddInput?.(null);
+    }
+  }, [isEditing, onSelectAddInput]);
+
+  const handleToggleAddInput = () => {
+    if (!onSelectAddInput) {
+      return;
+    }
+
+    if (isActiveAddInput) {
+      onSelectAddInput(null);
+      setNewChildTitle("");
+      return;
+    }
+
+    setIsEditing(false);
+    setEditedTitle(task.title);
+    onSelectAddInput(task.id);
+  };
+
+  const handleSaveNewChild = async () => {
+    if (!newChildTitle.trim()) {
+      Alert.alert("Error", "Subtask title cannot be empty.");
+      return;
+    }
+
+    try {
+      await onAddChild(task.id, newChildTitle.trim());
+      setNewChildTitle("");
+      onSelectAddInput?.(null);
+    } catch (error: any) {
+      Alert.alert("Error", error.message || "Failed to add subtask.");
+    }
+  };
+
+  const handleCancelNewChild = () => {
+    setNewChildTitle("");
+    onSelectAddInput?.(null);
+  };
+
+  const handleStartEditing = () => {
+    if (isActiveAddInput) {
+      onSelectAddInput?.(null);
+    }
+
+    setEditedTitle(task.title);
+    setIsEditing(true);
+  };
+
+  const handleCancelEdit = () => {
+    setEditedTitle(task.title);
+    setIsEditing(false);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editedTitle.trim()) {
+      Alert.alert("Error", "Task title cannot be empty.");
+      return;
+    }
+
+    if (!onSaveTaskTitle) {
+      return;
+    }
+
+    setIsSaving(true);
+
+    try {
+      await onSaveTaskTitle(task.id, editedTitle.trim());
+      setIsEditing(false);
+    } catch (error: any) {
+      Alert.alert("Error", error.message || "Failed to save task.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const treeChildren = task.children ?? [];
   const subtasks = task.subtasks ?? [];
   const hasChildren = treeChildren.length > 0;
 
-  const handleAddChild = () => {
-    if (newChildTitle.trim()) {
-      onAddChild(task.id, newChildTitle.trim());
-      setNewChildTitle("");
-    }
-  };
-
   const rowContent = (
     <View className="flex-row items-center">
       <Checkbox completed={task.completed} onPress={() => onToggle(task.id)} />
 
-      <Text
-        className={`flex-1 text-base ${task.completed ? "text-neutral-400 line-through" : "text-foreground"}`}
-      >
-        {task.title}
-      </Text>
+      {isEditing ? (
+        <TextInput
+          value={editedTitle}
+          onChangeText={setEditedTitle}
+          placeholder="Edit task title"
+          placeholderTextColor="#9CA3AF"
+          className="flex-1 rounded-xl bg-neutral-100 px-3 py-2 text-base text-foreground"
+          style={{ color: "#111827" }}
+        />
+      ) : (
+        <Text
+          className={`flex-1 text-base ${task.completed ? "text-neutral-400 line-through" : "text-foreground"}`}
+        >
+          {task.title}
+        </Text>
+      )}
 
       <View className="flex-row items-center gap-3">
-        <Feather name="plus" size={16} color="#9CA3AF" />
-        <Feather name="edit-2" size={16} color="#9CA3AF" />
+        <TouchableOpacity onPress={handleToggleAddInput} hitSlop={8}>
+          <Feather name="plus" size={16} color="#9CA3AF" />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={handleStartEditing} hitSlop={8}>
+          <Feather name="edit-2" size={16} color="#9CA3AF" />
+        </TouchableOpacity>
         <TouchableOpacity onPress={() => onDelete(task.id)} hitSlop={8}>
           <Feather name="trash-2" size={16} color="#F87171" />
         </TouchableOpacity>
@@ -88,6 +188,44 @@ export default function TaskCard(props: Props) {
     </View>
   );
 
+  const editActions = isEditing ? (
+    <View className="mx-4 mb-3 flex-row justify-end gap-3">
+      <TouchableOpacity onPress={handleCancelEdit}>
+        <Text className="text-sm font-medium text-neutral-500">Cancel</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        onPress={handleSaveEdit}
+        className="rounded-xl bg-black px-4 py-2.5"
+        disabled={isSaving}
+      >
+        <Text className="text-sm font-semibold text-white">{isSaving ? "Saving..." : "Save"}</Text>
+      </TouchableOpacity>
+    </View>
+  ) : null;
+
+  const addChildInput = isActiveAddInput ? (
+    <View className="mx-4 mb-3 flex-row items-center rounded-2xl bg-neutral-100 px-3 py-2">
+  <TextInput
+    ref={addInputRef}
+    placeholder="Add a subtask..."
+    placeholderTextColor="#9CA3AF"
+    value={newChildTitle}
+    onChangeText={setNewChildTitle}
+    className="flex-1 text-sm text-foreground"
+    style={{ color: "#111827" }}
+  />
+
+  <TouchableOpacity
+    onPress={handleSaveNewChild}
+    className="ml-3 h-9 items-center justify-center rounded-full bg-black px-4"
+  >
+    <Text className="text-xs font-semibold text-white">
+      Add
+    </Text>
+  </TouchableOpacity>
+</View>
+  ) : null;
+
   if (depth > 0) {
     return (
       <View className="mb-2">
@@ -98,7 +236,10 @@ export default function TaskCard(props: Props) {
           {rowContent}
         </View>
 
-        {expanded && treeChildren.length > 0 && (
+        {editActions}
+        {addChildInput}
+
+        {expanded && treeChildren.length > 0 && isTreeProps(props) && (
           <View className="mt-2 border-l border-neutral-200 pl-3" style={{ marginLeft: depth * 16 + 8 }}>
             {treeChildren.map((child) => (
               <TaskCard
@@ -107,28 +248,12 @@ export default function TaskCard(props: Props) {
                 onToggle={onToggle}
                 onDelete={onDelete}
                 onAddChild={onAddChild}
+                onSaveTaskTitle={props.onSaveTaskTitle}
+                onSelectAddInput={props.onSelectAddInput}
+                activeAddInputTaskId={props.activeAddInputTaskId}
                 depth={depth + 1}
               />
             ))}
-          </View>
-        )}
-
-        {isTreeProps(props) && depth < MAX_DEPTH && (
-          <View
-            className="mt-2 flex-row items-center rounded-xl bg-neutral-100 px-3 py-2"
-            style={{ marginLeft: depth * 16 }}
-          >
-            <TextInput
-              placeholder={depth > 1 ? "Add nested subtask..." : "Add a subtask..."}
-              placeholderTextColor="#9CA3AF"
-              value={newChildTitle}
-              onChangeText={setNewChildTitle}
-              className="mr-2 flex-1 text-sm text-foreground"
-              style={{ color: "#111827" }}
-            />
-            <TouchableOpacity onPress={handleAddChild} className="rounded-lg bg-black px-3 py-1.5">
-              <Text className="text-xs font-semibold text-white">Add</Text>
-            </TouchableOpacity>
           </View>
         )}
       </View>
@@ -138,6 +263,9 @@ export default function TaskCard(props: Props) {
   return (
     <View>
       <View className="border-b border-neutral-100 px-4 py-4">{rowContent}</View>
+
+      {editActions}
+      {addChildInput}
 
       {subtasks.length > 0 && (
         <View className="px-4 py-2">
@@ -172,7 +300,7 @@ export default function TaskCard(props: Props) {
         </View>
       )}
 
-      {expanded && treeChildren.length > 0 && (
+      {expanded && treeChildren.length > 0 && isTreeProps(props) && (
         <View className="border-l border-neutral-200 px-4 pb-2 pl-6">
           {treeChildren.map((child) => (
             <TaskCard
@@ -181,25 +309,12 @@ export default function TaskCard(props: Props) {
               onToggle={onToggle}
               onDelete={onDelete}
               onAddChild={onAddChild}
+              onSaveTaskTitle={props.onSaveTaskTitle}
+              onSelectAddInput={props.onSelectAddInput}
+              activeAddInputTaskId={props.activeAddInputTaskId}
               depth={depth + 1}
             />
           ))}
-        </View>
-      )}
-
-      {isTreeProps(props) && depth < MAX_DEPTH && (
-        <View className="mx-4 mb-3 flex-row items-center rounded-xl bg-neutral-100 px-3 py-2">
-          <TextInput
-            placeholder="Add a subtask..."
-            placeholderTextColor="#9CA3AF"
-            value={newChildTitle}
-            onChangeText={setNewChildTitle}
-            className="mr-2 flex-1 text-sm text-foreground"
-            style={{ color: "#111827" }}
-          />
-          <TouchableOpacity onPress={handleAddChild} className="rounded-lg bg-black px-3 py-1.5">
-            <Text className="text-xs font-semibold text-white">Add</Text>
-          </TouchableOpacity>
         </View>
       )}
     </View>

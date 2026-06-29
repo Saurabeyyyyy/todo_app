@@ -1,12 +1,13 @@
 import { Feather } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useEffect, useState } from "react";
 import { Alert, Pressable, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import LogoutModal from "../../components/LogoutModal";
 import { useUser } from "../../components/UserContext";
-import { loadTasks } from "../../utils/storage";
 import { Item } from "../../utils/task";
+import { account } from "../appwrite/config";
+import { getUserTasks } from "../appwrite/tasks";
 
 function countItems(list: Item[]): number {
   if (!Array.isArray(list)) return 0;
@@ -31,30 +32,44 @@ export default function ProfileScreen() {
   const router = useRouter();
   const { user, logout, updateUser } = useUser();
   const [isEditing, setIsEditing] = useState(false);
-  const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [taskStats, setTaskStats] = useState({ total: 0, done: 0, pending: 0 });
 
   const [fullName, setFullName] = useState(user?.fullName || "");
   const [email, setEmail] = useState(user?.email || "");
   const [memberSince] = useState(user?.memberSince || "");
 
-  useEffect(() => {
-    if (user) {
-      setFullName(user.fullName);
-      setEmail(user.email);
+  const loadTaskStats = useCallback(async () => {
+    if (!user) {
+      setTaskStats({ total: 0, done: 0, pending: 0 });
+      return;
+    }
+
+    try {
+      const currentUser = await account.get();
+      const response = await getUserTasks(currentUser.$id);
+      if (!response.success) {
+        throw new Error(response.error || "Unable to load task stats.");
+      }
+
+      const items = Array.isArray(response.data) ? response.data : [];
+      const total = countItems(items);
+      const done = countCompleted(items);
+
+      setTaskStats({ total, done, pending: Math.max(total - done, 0) });
+    } catch (error: any) {
+      Alert.alert("Error", error.message || "Failed to load task stats.");
     }
   }, [user]);
 
   useEffect(() => {
-    const loadStats = async () => {
-      const stored = await loadTasks();
-      const items = Array.isArray(stored) ? stored : [];
-      const total = countItems(items);
-      const done = countCompleted(items);
-      setTaskStats({ total, done, pending: Math.max(total - done, 0) });
-    };
-    loadStats();
-  }, []);
+    loadTaskStats();
+  }, [loadTaskStats]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadTaskStats();
+    }, [loadTaskStats])
+  );
 
   if (!user) {
     return (
@@ -64,13 +79,20 @@ export default function ProfileScreen() {
     );
   }
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!fullName.trim() || !email.trim()) {
       Alert.alert("Error", "Name and email cannot be empty.");
       return;
     }
-    updateUser({ fullName: fullName.trim(), email: email.trim() });
-    setIsEditing(false);
+
+    try {
+      await account.updateName(fullName.trim());
+      updateUser({ fullName: fullName.trim(), email: email.trim() });
+      setIsEditing(false);
+      Alert.alert("Success", "Profile updated successfully.");
+    } catch (error: any) {
+      Alert.alert("Error", error.message || "Failed to update profile.");
+    }
   };
 
   const handleCancel = () => {
@@ -79,11 +101,6 @@ export default function ProfileScreen() {
     setIsEditing(false);
   };
 
-  const handleLogout = async () => {
-    setShowLogoutModal(false);
-    await logout();
-    router.replace("/auth/login");
-  };
 
   const initial = fullName.charAt(0).toUpperCase();
 
@@ -174,23 +191,28 @@ export default function ProfileScreen() {
             </View>
           </View>
 
-          <View className="border-t border-neutral-100 px-6 py-4">
+         <View className="border-t border-neutral-100 px-6 py-4">
             <Text className="mb-3 text-xs font-semibold tracking-wider text-neutral-400">TASK STATS</Text>
-            <View className="flex-row gap-3">
-              <View className="flex-1 items-center rounded-2xl bg-neutral-50 py-4">
-                <Text className="text-2xl font-bold text-foreground">{taskStats.total}</Text>
-                <Text className="mt-1 text-xs text-neutral-500">Total</Text>
-              </View>
-              <View className="flex-1 items-center rounded-2xl bg-green-50 py-4">
-                <Text className="text-2xl font-bold text-green-600">{taskStats.done}</Text>
-                <Text className="mt-1 text-xs text-neutral-500">Done</Text>
-              </View>
-              <View className="flex-1 items-center rounded-2xl bg-orange-50 py-4">
-                <Text className="text-2xl font-bold text-orange-500">{taskStats.pending}</Text>
-                <Text className="mt-1 text-xs text-neutral-500">Pending</Text>
-              </View>
-            </View>
-          </View>
+        <View className="flex-row gap-3">
+   
+        <View className="flex-1 items-center rounded-2xl bg-neutral-100/60 py-4">
+          <Text className="text-2xl font-bold text-neutral-800">{taskStats.total}</Text>
+          <Text className="mt-1 text-xs text-neutral-400">Total</Text>
+        </View>
+    
+    
+    <View className="flex-1 items-center rounded-2xl bg-indigo-50 py-4">
+      <Text className="text-2xl font-bold text-indigo-500">{taskStats.done}</Text>
+      <Text className="mt-1 text-xs text-neutral-400">Done</Text>
+    </View>
+    
+    
+    <View className="flex-1 items-center rounded-2xl bg-pink-50 py-4">
+          <Text className="text-2xl font-bold text-pink-500">{taskStats.pending}</Text>
+          <Text className="mt-1 text-xs text-neutral-400">Pending</Text>
+        </View>
+      </View>
+    </View>
 
           <View className="flex-row items-center justify-end gap-3 border-t border-neutral-100 px-6 py-4">
             {isEditing ? (
@@ -204,9 +226,7 @@ export default function ProfileScreen() {
               </>
             ) : (
               <>
-                <Pressable onPress={() => setShowLogoutModal(true)}>
-                  <Text className="text-sm font-medium text-neutral-500">Log out</Text>
-                </Pressable>
+               
                 <Pressable onPress={() => router.replace("/home")}>
                   <Text className="text-sm font-semibold text-foreground">Close</Text>
                 </Pressable>
@@ -216,11 +236,6 @@ export default function ProfileScreen() {
         </View>
       </View>
 
-      <LogoutModal
-        visible={showLogoutModal}
-        onCancel={() => setShowLogoutModal(false)}
-        onConfirm={handleLogout}
-      />
     </SafeAreaView>
   );
 }

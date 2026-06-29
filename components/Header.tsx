@@ -1,11 +1,16 @@
 import { Feather, Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Text, TouchableOpacity, View } from "react-native";
 import LogoutModal from "./LogoutModal";
 import { useUser } from "./UserContext";
 
-export default function Header() {
+type HeaderProps = {
+  onRefresh?: () => void;
+  isRefreshing?: boolean;
+};
+
+export default function Header({ onRefresh, isRefreshing = false }: HeaderProps) {
   const router = useRouter();
   const { user, logout } = useUser();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
@@ -26,6 +31,20 @@ export default function Header() {
         </View>
 
         <Text className="flex-1 text-lg font-bold text-foreground">Todo App</Text>
+
+        <TouchableOpacity
+          onPress={onRefresh}
+          disabled={isRefreshing}
+          hitSlop={8}
+          className="mr-3 h-9 w-9 items-center justify-center rounded-full bg-black"
+          style={{ opacity: isRefreshing ? 0.5 : 1 }}
+        >
+          {isRefreshing ? (
+            <ActivityIndicator size="small" color="#FFFFFF" />
+          ) : (
+            <Feather name="refresh-cw" size={18} color="#FFFFFF" />
+          )}
+        </TouchableOpacity>
 
         <TouchableOpacity
           onPress={() => router.push("/profile")}
