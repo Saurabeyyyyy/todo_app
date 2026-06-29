@@ -219,14 +219,14 @@ export default function HomeScreen() {
     }
 
     const task = findItemInTree(items, id);
-    console.log("Deleting task object:", task);
-    console.log("Deleting task id:", id);
+    //console.log("Deleting task object:", task);
+    //console.log("Deleting task id:", id);
 
     setDeletingTaskIds((prev) => [...prev, id]);
 
     try {
       const response = await deleteTask(id);
-      console.log("deleteTask Appwrite response for id", id, response);
+      //console.log("deleteTask Appwrite response for id", id, response);
 
       if (!response.success) {
         if (response.error?.toString().toLowerCase().includes("could not be found")) {

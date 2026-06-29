@@ -3,6 +3,7 @@ import { Alert } from "react-native";
 import { account } from "../src/appwrite/config";
 
 interface User {
+  id: string;
   fullName: string;
   email: string;
   memberSince: string;
@@ -37,12 +38,12 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     const request = (async () => {
       try {
         if (__DEV__) {
-          console.log("Checking Appwrite session.");
+          //console.log("Checking Appwrite session.");
         }
 
         const currentUser = await account.get();
         if (__DEV__) {
-          console.log("Session exists:", currentUser);
+          //console.log("Session exists:", currentUser);
         }
 
         const nextUser = {
@@ -56,8 +57,8 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         return nextUser;
       } catch (error) {
         if (__DEV__) {
-          console.log("No session found.");
-          console.log("Session check error:", error);
+          //console.log("No session found.");
+          //console.log("Session check error:", error);
         }
         setUser(null);
         return null;
@@ -77,12 +78,15 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         devSessionResetState.__appwriteDevSessionResetDone__ = true;
 
         try {
-          console.log("Development mode: clearing existing Appwrite session once on startup.");
-          console.log("deleteSession started.");
+          //console.log("Development mode: clearing existing Appwrite session once on startup.");
+          //console.log("deleteSession started.");
           await account.deleteSession("current");
-          console.log("deleteSession successful.");
-        } catch (error) {
-          if (__DEV__) {
+          //console.log("deleteSession successful.");
+        } catch (error: any) {
+          // If error code is 401, it just means they are a guest. Ignore it safely.
+          if (error?.code === 401) {
+            //console.log("Development mode: No active session to clear on startup.");
+          } else if (__DEV__) {
             console.error("deleteSession failed:", error);
           }
         } finally {
@@ -101,13 +105,13 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
   const login = useCallback(async (email: string, password: string) => {
     if (__DEV__) {
-      console.log("Login started.");
+      //console.log("Login started.");
     }
 
     await account.createEmailPasswordSession(email, password);
 
     if (__DEV__) {
-      console.log("createEmailPasswordSession successful.");
+      //console.log("createEmailPasswordSession successful.");
     }
 
     const currentUser = await refreshUser();
@@ -126,19 +130,27 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const logout = useCallback(async () => {
     try {
       if (__DEV__) {
-        console.log("deleteSession started.");
+        //console.log("deleteSession started.");
       }
 
       await account.deleteSession("current");
 
       if (__DEV__) {
-        console.log("deleteSession successful.");
+        //console.log("deleteSession successful.");
       }
 
       setUser(null);
       setLoading(false);
       return true;
     } catch (error: any) {
+      // Also catch 401 here in case logout is called twice rapidly due to React StrictMode
+      if (error?.code === 401) {
+        //console.log("Logout triggered, but no active session found.");
+        setUser(null);
+        setLoading(false);
+        return true;
+      }
+
       if (__DEV__) {
         console.error("deleteSession failed:", error);
       }
@@ -149,7 +161,6 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       return false;
     }
   }, []);
-
 
   return (
     <UserContext.Provider value={{ user, loading, setUser, updateUser, login, refreshUser, logout }}>
