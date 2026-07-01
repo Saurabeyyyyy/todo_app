@@ -15,8 +15,6 @@ type TreeProps = {
 
   depth: number;
 
-  // NEW
-  number: string;
 };
 
 // type TreeProps = {
@@ -63,6 +61,16 @@ function Checkbox({ completed, onPress }: { completed: boolean; onPress: () => v
   );
 }
 
+function getTotalChildCount(children: Item[]): number {
+  let count = children.length;
+
+  for (const child of children) {
+    count += getTotalChildCount(child.children ?? []);
+  }
+
+  return count;
+}
+
 export default function TaskCard(props: Props) {
   const [newChildTitle, setNewChildTitle] = useState("");
   const [expanded, setExpanded] = useState(true);
@@ -73,7 +81,7 @@ export default function TaskCard(props: Props) {
 
   const task = isTreeProps(props) ? props.item : props.task;
   const depth = isTreeProps(props) ? props.depth : 0;
-  const number = isTreeProps(props) ? props.number : "";
+  //const number = isTreeProps(props) ? props.number : "";
   const onToggle = isTreeProps(props) ? props.onToggle : props.onToggleTask;
   const onDelete = isTreeProps(props) ? props.onDelete : props.onDeleteTask;
   const onAddChild = isTreeProps(props) ? props.onAddChild : props.onAddSubtask;
@@ -166,6 +174,8 @@ export default function TaskCard(props: Props) {
   };
 
   const treeChildren = task.children ?? [];
+  // const childCount = treeChildren.length;
+  const childCount = getTotalChildCount(treeChildren);
   const subtasks = task.subtasks ?? [];
   const hasChildren = treeChildren.length > 0;
 
@@ -191,7 +201,7 @@ export default function TaskCard(props: Props) {
                 : "text-foreground"
             }`}
           >
-            {number}. {task.title}
+            {task.title}
           </Text>
         // <Text
         //   className={`flex-1 text-base ${task.completed ? "text-neutral-400 line-through" : "text-foreground"}`}
@@ -200,7 +210,43 @@ export default function TaskCard(props: Props) {
         // </Text>
       )}
 
-      <View className="flex-row items-center gap-3">
+                <View className="flex-row items-center gap-3">
+
+            {childCount > 0 && (
+              <View className="mr-2 flex-row items-center rounded-full bg-neutral-200 px-3 py-1">
+                <Feather name="list" size={12} color="#555" />
+
+                <Text className="ml-1 text-xs font-semibold text-neutral-700">
+                  {childCount}
+                </Text>
+              </View>
+            )}
+
+            <TouchableOpacity onPress={handleToggleAddInput} hitSlop={8}>
+              <Feather name="plus" size={16} color="#9CA3AF" />
+            </TouchableOpacity>
+
+            <TouchableOpacity onPress={handleStartEditing} hitSlop={8}>
+              <Feather name="edit-2" size={16} color="#9CA3AF" />
+            </TouchableOpacity>
+
+            <TouchableOpacity onPress={() => onDelete(task.id)} hitSlop={8}>
+              <Feather name="trash-2" size={16} color="#F87171" />
+            </TouchableOpacity>
+
+            {hasChildren && (
+              <TouchableOpacity onPress={() => setExpanded((prev) => !prev)} hitSlop={8}>
+                <Feather
+                  name={expanded ? "chevron-up" : "chevron-down"}
+                  size={16}
+                  color="#9CA3AF"
+                />
+              </TouchableOpacity>
+            )}
+
+          </View>
+
+      {/* <View className="flex-row items-center gap-3">
         <TouchableOpacity onPress={handleToggleAddInput} hitSlop={8}>
           <Feather name="plus" size={16} color="#9CA3AF" />
         </TouchableOpacity>
@@ -215,8 +261,8 @@ export default function TaskCard(props: Props) {
             <Feather name={expanded ? "chevron-up" : "chevron-down"} size={16} color="#9CA3AF" />
           </TouchableOpacity>
         )}
-      </View>
-    </View>
+      </View>*/}
+    </View> 
   );
 
   const editActions = isEditing ? (
@@ -285,7 +331,7 @@ export default function TaskCard(props: Props) {
                 activeAddInputTaskId={props.activeAddInputTaskId}
                 depth={depth + 1}
 
-                number={`${number}.${index + 1}`}
+                
               />
             ))}
             {/* {treeChildren.map((child) => (
@@ -363,7 +409,7 @@ export default function TaskCard(props: Props) {
             activeAddInputTaskId={props.activeAddInputTaskId}
             depth={depth + 1}
 
-            number={`${number}.${index + 1}`}
+          
           />
            ))}
 

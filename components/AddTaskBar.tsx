@@ -3,18 +3,32 @@ import { Text, TextInput, TouchableOpacity, View } from "react-native";
 import { Priority } from "../utils/task";
 
 type Props = {
-  onAddTask: (title: string, priority: Priority) => void;
+  onAddTask: (title: string, priority: Priority) => Promise<void>;
 };
+
+
+// type Props = {
+//   onAddTask: (title: string, priority: Priority) => void;
+// };
 
 export default function AddTaskBar({ onAddTask }: Props) {
   const [title, setTitle] = useState("");
 
-  const handleAdd = () => {
-    if (title.trim()) {
-      onAddTask(title.trim(), "medium");
-      setTitle("");
-    }
-  };
+  // const handleAdd = () => {
+  //   if (title.trim()) {
+  //     onAddTask(title.trim(), "medium");
+  //     setTitle("");
+  //   }
+  // };
+
+const handleAdd = async () => {
+  if (!title.trim()) return;
+
+  await onAddTask(title.trim(), "medium");
+  setTitle("");
+};
+
+
 
   return (
     <View className="mx-4 mb-3 flex-row items-center rounded-2xl bg-white px-4 py-3 shadow-sm">

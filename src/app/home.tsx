@@ -1,5 +1,5 @@
 ﻿import { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Alert, FlatList, RefreshControl, View } from "react-native";
+import { ActivityIndicator, Alert, FlatList, RefreshControl, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import AddTaskBar from "../../components/AddTaskBar";
@@ -63,7 +63,18 @@ export default function HomeScreen() {
   const [userId, setUserId] = useState<string | null>(null);
   const [activeAddInputTaskId, setActiveAddInputTaskId] = useState<string | null>(null);
   const [deletingTaskIds, setDeletingTaskIds] = useState<string[]>([]);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
   const { user, loading: userLoading } = useUser();
+
+  const showSuccessToast = useCallback((message: string) => {
+    setSuccessMessage(message);
+    setShowSuccess(true);
+
+    setTimeout(() => {
+      setShowSuccess(false);
+    }, 1500);
+  }, []);
 
   const refreshTasks = useCallback(async () => {
     setRefreshing(true);
@@ -126,21 +137,11 @@ export default function HomeScreen() {
           throw new Error(response.error || "Unable to create task.");
         }
 
-        const newItem: Item = {
-          id: response.data.$id,
-          title,
-          completed: false,
-          priority,
-          description: "",
-          children: [],
-        };
-
-        
-        Alert.alert("Success", "Task added successfully.");
+        showSuccessToast("Task added successfully.");
         await refreshTasks();
-      } catch (error: any) {
-        Alert.alert("Error", error.message || "Failed to create task.");
-      }
+       } catch (error: any) {
+         Alert.alert("Error", error.message || "Failed to create task.");
+       }
     },
     [userId]
   );
@@ -240,7 +241,7 @@ export default function HomeScreen() {
         throw new Error(response.error || "Unable to delete task.");
       }
 
-      Alert.alert("Success", "Task deleted successfully.");
+      showSuccessToast("Task deleted successfully.");
     } catch (error: any) {
       const message = error?.message || "Failed to delete task.";
       if (message.toLowerCase().includes("could not be found")) {
@@ -317,7 +318,7 @@ export default function HomeScreen() {
                 onSelectAddInput={selectAddInputTask}
                 activeAddInputTaskId={activeAddInputTaskId}
                 depth={0}
-                number={`${index + 1}`}
+                
               />
               )}
 
@@ -342,6 +343,43 @@ export default function HomeScreen() {
           />
         </View>
       </View>
+
+
+          {showSuccess && (
+            <View
+              style={{
+                position: "absolute",
+                top: 0,
+                bottom: 0,
+                left: 0,
+                right: 0,
+                justifyContent: "center",
+                alignItems: "center",
+                zIndex: 999,
+              }}
+              pointerEvents="none"
+            >
+              <View
+                className="rounded-xl bg-green-600 px-5 py-3"
+                style={{ elevation: 5 }}
+              >
+                <Text className="font-semibold text-white">
+                  {successMessage}
+                </Text>
+              </View>
+            </View>
+          )}
+      {/* {showSuccess && (
+        <View
+          className="absolute bottom-10 self-center rounded-xl bg-green-600 px-5 py-3"
+          style={{ elevation: 5 }}
+        >
+          <Text className="font-semibold text-white">
+            {successMessage}
+          </Text>
+        </View> 
+)}*/}
+
     </SafeAreaView>
   );
 }
