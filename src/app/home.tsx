@@ -135,7 +135,7 @@ export default function HomeScreen() {
           children: [],
         };
 
-        setItems((prev) => [newItem, ...prev]);
+        
         Alert.alert("Success", "Task added successfully.");
         await refreshTasks();
       } catch (error: any) {
@@ -307,7 +307,7 @@ export default function HomeScreen() {
           <FlatList
             data={items}
             keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
+            renderItem={({ item, index }) => (
               <TaskCard
                 item={item}
                 onToggle={toggleItem}
@@ -317,8 +317,23 @@ export default function HomeScreen() {
                 onSelectAddInput={selectAddInputTask}
                 activeAddInputTaskId={activeAddInputTaskId}
                 depth={0}
+                number={`${index + 1}`}
               />
-            )}
+              )}
+
+
+            // renderItem={({ item }) => (
+            //   <TaskCard
+            //     item={item}
+            //     onToggle={toggleItem}
+            //     onDelete={deleteItemTask}
+            //     onAddChild={addChild}
+            //     onSaveTaskTitle={saveTaskTitle}
+            //     onSelectAddInput={selectAddInputTask}
+            //     activeAddInputTaskId={activeAddInputTaskId}
+            //     depth={0}
+            //   />
+            // )}
             refreshControl={
               <RefreshControl refreshing={refreshing} onRefresh={refreshTasks} />
             }

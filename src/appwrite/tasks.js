@@ -31,7 +31,8 @@ export const getUserTasks = async (userId) => {
       TASKS_COLLECTION_ID,
       [
         Query.equal("userId", userId),
-        Query.orderDesc("$createdAt"),
+        //Query.orderDesc("$createdAt"),
+        Query.orderAsc("$createdAt"),
       ]
     );
 

@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { Alert, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { Item, Task } from "../utils/task";
 
+
 type TreeProps = {
   item: Item;
   onToggle: (id: string) => void;
@@ -11,8 +12,25 @@ type TreeProps = {
   onSaveTaskTitle: (id: string, title: string) => Promise<void> | void;
   onSelectAddInput: (taskId: string | null) => void;
   activeAddInputTaskId: string | null;
+
   depth: number;
+
+  // NEW
+  number: string;
 };
+
+// type TreeProps = {
+//   item: Item;
+//   onToggle: (id: string) => void;
+//   onDelete: (id: string) => void;
+//   onAddChild: (parentId: string, title: string) => Promise<void> | void;
+//   onSaveTaskTitle: (id: string, title: string) => Promise<void> | void;
+//   onSelectAddInput: (taskId: string | null) => void;
+//   activeAddInputTaskId: string | null;
+//   depth: number;
+// };
+
+
 
 type FlatProps = {
   task: Task;
@@ -24,6 +42,8 @@ type FlatProps = {
 };
 
 type Props = TreeProps | FlatProps;
+
+
 
 function isTreeProps(props: Props): props is TreeProps {
   return "item" in props;
@@ -53,6 +73,7 @@ export default function TaskCard(props: Props) {
 
   const task = isTreeProps(props) ? props.item : props.task;
   const depth = isTreeProps(props) ? props.depth : 0;
+  const number = isTreeProps(props) ? props.number : "";
   const onToggle = isTreeProps(props) ? props.onToggle : props.onToggleTask;
   const onDelete = isTreeProps(props) ? props.onDelete : props.onDeleteTask;
   const onAddChild = isTreeProps(props) ? props.onAddChild : props.onAddSubtask;
@@ -162,11 +183,21 @@ export default function TaskCard(props: Props) {
           style={{ color: "#111827" }}
         />
       ) : (
-        <Text
-          className={`flex-1 text-base ${task.completed ? "text-neutral-400 line-through" : "text-foreground"}`}
-        >
-          {task.title}
-        </Text>
+
+          <Text
+            className={`flex-1 text-base ${
+              task.completed
+                ? "text-neutral-400 line-through"
+                : "text-foreground"
+            }`}
+          >
+            {number}. {task.title}
+          </Text>
+        // <Text
+        //   className={`flex-1 text-base ${task.completed ? "text-neutral-400 line-through" : "text-foreground"}`}
+        // >
+        //   {task.title}
+        // </Text>
       )}
 
       <View className="flex-row items-center gap-3">
@@ -241,7 +272,8 @@ export default function TaskCard(props: Props) {
 
         {expanded && treeChildren.length > 0 && isTreeProps(props) && (
           <View className="mt-2 border-l border-neutral-200 pl-3" style={{ marginLeft: depth * 16 + 8 }}>
-            {treeChildren.map((child) => (
+
+            {treeChildren.map((child, index) => (
               <TaskCard
                 key={child.id}
                 item={child}
@@ -252,8 +284,24 @@ export default function TaskCard(props: Props) {
                 onSelectAddInput={props.onSelectAddInput}
                 activeAddInputTaskId={props.activeAddInputTaskId}
                 depth={depth + 1}
+
+                number={`${number}.${index + 1}`}
               />
             ))}
+            {/* {treeChildren.map((child) => (
+              <TaskCard
+                key={child.id}
+                item={child}
+                onToggle={onToggle}
+                onDelete={onDelete}
+                onAddChild={onAddChild}
+                onSaveTaskTitle={props.onSaveTaskTitle}
+                onSelectAddInput={props.onSelectAddInput}
+                activeAddInputTaskId={props.activeAddInputTaskId}
+                depth={depth + 1}
+              /> 
+            ))}
+              */}
           </View>
         )}
       </View>
@@ -302,7 +350,24 @@ export default function TaskCard(props: Props) {
 
       {expanded && treeChildren.length > 0 && isTreeProps(props) && (
         <View className="border-l border-neutral-200 px-4 pb-2 pl-6">
-          {treeChildren.map((child) => (
+
+        {treeChildren.map((child, index) => (
+          <TaskCard
+            key={child.id}
+            item={child}
+            onToggle={onToggle}
+            onDelete={onDelete}
+            onAddChild={onAddChild}
+            onSaveTaskTitle={props.onSaveTaskTitle}
+            onSelectAddInput={props.onSelectAddInput}
+            activeAddInputTaskId={props.activeAddInputTaskId}
+            depth={depth + 1}
+
+            number={`${number}.${index + 1}`}
+          />
+           ))}
+
+          {/* {treeChildren.map((child) => (
             <TaskCard
               key={child.id}
               item={child}
@@ -314,7 +379,7 @@ export default function TaskCard(props: Props) {
               activeAddInputTaskId={props.activeAddInputTaskId}
               depth={depth + 1}
             />
-          ))}
+          ))} */}
         </View>
       )}
     </View>
