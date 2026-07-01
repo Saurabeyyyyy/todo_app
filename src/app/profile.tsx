@@ -156,7 +156,11 @@ export default function ProfileScreen() {
               <Feather name="mail" size={18} color="#9CA3AF" />
               <View className="ml-3 flex-1">
                 <Text className="text-xs text-neutral-500">Email</Text>
-                {isEditing ? (
+
+                <Text className="mt-0.5 text-base font-semibold text-foreground">
+                  {user.email}
+                </Text>
+                {/* {isEditing ? (
                   <TextInput
                     value={email}
                     onChangeText={setEmail}
@@ -167,9 +171,11 @@ export default function ProfileScreen() {
                   />
                 ) : (
                   <Text className="mt-0.5 text-base font-semibold text-foreground">{user.email}</Text>
-                )}
+                )} */}
               </View>
-              {!isEditing && (
+
+              
+              {/* {!isEditing && (
                 <Pressable
                   onPress={() => {
                     setIsEditing(true);
@@ -179,7 +185,9 @@ export default function ProfileScreen() {
                 >
                   <Feather name="edit-2" size={16} color="#9CA3AF" />
                 </Pressable>
-              )}
+              )} */}
+
+
             </View>
 
             <View className="flex-row items-center rounded-2xl bg-neutral-50 px-4 py-3">
