@@ -349,11 +349,9 @@ export default function HomeScreen() {
             <View
               style={{
                 position: "absolute",
-                top: 0,
-                bottom: 0,
+                bottom: 40,
                 left: 0,
                 right: 0,
-                justifyContent: "center",
                 alignItems: "center",
                 zIndex: 999,
               }}
